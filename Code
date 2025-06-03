@@ -1,0 +1,53 @@
+import cv2
+import numpy as np
+
+# Load Haar cascade for full body detection
+pedestrian_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fullbody.xml')
+
+# Start video capture (0 for webcam)
+cap = cv2.VideoCapture("C:\\Users\\marip\\Downloads\\vecteezy_people-crossing-the-road-on-zebra-tallin_28257759.mov")
+
+# Define region of interest (ROI) as the crosswalk zone
+# You can adjust these values to match your video scene
+crosswalk_top_left = (150, 300)
+crosswalk_bottom_right = (500, 450)
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Resize and convert to grayscale
+    frame = cv2.resize(frame, (640, 480))
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect pedestrians
+    pedestrians = pedestrian_cascade.detectMultiScale(gray, 1.1, 4)
+
+    # Draw crosswalk area
+    cv2.rectangle(frame, crosswalk_top_left, crosswalk_bottom_right, (255, 255, 0), 2)
+    alert_triggered = False
+
+    for (x, y, w, h) in pedestrians:
+        # Draw pedestrian bounding box
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        # Check if pedestrian is within the crosswalk region
+        if (crosswalk_top_left[0] < x < crosswalk_bottom_right[0] and
+                crosswalk_top_left[1] < y + h < crosswalk_bottom_right[1]):
+            alert_triggered = True
+
+    # Show alert if pedestrian in crosswalk
+    if alert_triggered:
+        cv2.putText(frame, "ALERT: Crosswalk Occupied!", (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+        # Optional: play sound alert with playsound or winsound
+
+    # Display frame
+    cv2.imshow('Pedestrian Detection with Crosswalk Alert', frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
